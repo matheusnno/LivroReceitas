@@ -54,7 +54,7 @@ const api = {
     const res = await sFetch(`${SUPABASE_URL}/rest/v1/receita?select=*&id=eq.${id}`);
     return res[0] || null;
   },
-
+ 
   async criarReceita(data) {
     return sFetch(`${SUPABASE_URL}/rest/v1/receita`, {
       method: 'POST',
