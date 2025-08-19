@@ -1,4 +1,4 @@
-<!DOCTYPE html>
+	<!DOCTYPE html>
 <html lang="pt-BR">
 <head>
   <meta charset="UTF-8" />
@@ -60,7 +60,6 @@
     </form>
   </main>
 
-  <!-- Template para ingredientes -->
   <template id="tpl-ing">
     <div class="ing-row">
       <input class="ing-nome" placeholder="Ingrediente (ex: Farinha de trigo)" required />
@@ -84,13 +83,11 @@
       ingContainer.appendChild(node);
     }
 
-    // Botão para adicionar linha
     document.getElementById('btnAddIng').addEventListener('click', () => addIng());
 
-    // Começa com 3 linhas de ingrediente
+    // Comece com 3 linhas de ingrediente
     addIng(); addIng(); addIng();
 
-    // Submissão do formulário
     document.getElementById('formReceita').addEventListener('submit', async (e) => {
       e.preventDefault();
       const form = e.target;
@@ -104,6 +101,12 @@
         rendimento: (data.rendimento || '').trim() || null,
       };
 
+      if (!receita.nome || !receita.modo_preparo) {
+        alert('Preencha os campos obrigatórios.');
+        return;
+      }
+
+      // Montar array de ingredientes
       const linhas = Array.from(document.querySelectorAll('.ing-row'));
       const ingredientes = linhas
         .map(l => ({
@@ -113,10 +116,11 @@
         .filter(x => x.nome);
 
       try {
+        // Criar receita + ingredientes juntos
         const receitaCompleta = await api.criarReceitaCompleta(receita, ingredientes);
         window.location.href = 'receita.html?id=' + encodeURIComponent(receitaCompleta.id);
       } catch (err) {
-        alert("Erro ao salvar a receita. Confira o console para detalhes.");
+        alert('Não foi possível salvar a receita.');
         console.error(err);
       }
     });
