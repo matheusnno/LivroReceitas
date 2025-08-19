@@ -113,7 +113,20 @@ body {
   justify-content: space-between;
   margin-bottom: .5rem;
 }
-.ing-row { display: grid; gap: .5rem; grid-template-columns: 1fr 1fr auto; margin-bottom: .5rem; }
+.ing-row {
+  display: flex;
+  gap: 8px; /* Espaçamento entre os inputs */
+  margin-bottom: 8px; /* Espaço entre cada linha de ingrediente */
+}
+
+.ing-row input {
+  flex: 1; /* Cada input ocupa espaço igual */
+  min-width: 0; /* Evita que quebre linha */
+}
+
+.ing-qtde {
+  flex: 0.5; /* Quantidade ocupa menos espaço que o nome */
+}
 
 /* Detalhe */
 .recipe-detail .stack > div { margin-bottom: .5rem; }
