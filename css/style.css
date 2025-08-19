@@ -115,15 +115,21 @@ body {
 }
 .ing-row {
   display: flex;
-  gap: 8px; /* Espaçamento entre os inputs */
-  margin-bottom: 8px; /* Espaço entre cada linha de ingrediente */
+  gap: 4px; /* espaçamento menor para caber no mobile */
+  margin-bottom: 8px;
+  flex-wrap: wrap; /* permite quebrar linha se necessário */
+  align-items: center;
 }
-.ing-row input {
-  flex: 1; /* Nome ocupa a maior parte */
+.ing-row input.ing-nome {
+  flex: 2 1 60%; /* cresce, encolhe, base 60% */
   min-width: 0;
 }
-.ing-qtde {
-  flex: 0.5; /* Quantidade ocupa menos espaço */
+.ing-row input.ing-qtde {
+  flex: 1 1 30%; /* cresce, encolhe, base 30% */
+  min-width: 0;
+}
+.ing-row button.btn-rem {
+  flex: 0 0 auto; /* botão mantém tamanho natural */
 }
 
 /* Detalhe */
@@ -161,11 +167,11 @@ body {
 @media (max-width: 520px) {
   .form-inline { grid-template-columns: 1fr; }
 
-  /* Ingredientes empilhados verticalmente em telas pequenas */
+  /* Ingredientes empilhados se não couber horizontalmente */
   .ing-row {
     flex-direction: column;
   }
   .ing-row input {
-    flex: 1; /* Ocupa toda a largura */
+    flex: 1;
   }
 }
