@@ -51,12 +51,13 @@ const api = {
     return res[0] || null;
   },
 
-  async criarReceita(data) {
-    return sFetch(`${SUPABASE_URL}/rest/v1/receita?return=representation`, {
-      method: 'POST',
-      body: JSON.stringify(data)
-    });
-  },
+async criarReceita(data) {
+  return sFetch(`${SUPABASE_URL}/rest/v1/receita`, {
+    method: 'POST',
+    headers: { ...headers, Prefer: 'return=representation' }, // <- aqui
+    body: JSON.stringify(data)
+  });
+}
 
   async deletarReceita(id) {
     return sFetch(`${SUPABASE_URL}/rest/v1/receita?id=eq.${id}`, {
@@ -69,13 +70,14 @@ const api = {
     return sFetch(`${SUPABASE_URL}/rest/v1/ingrediente?select=*&receita_id=eq.${receitaId}&order=id.asc`);
   },
 
-  async criarIngredientes(receitaId, itens) {
-    const dados = itens.map(x => ({ receita_id: receitaId, nome: x.nome, qtde: x.qtde || null }));
-    return sFetch(`${SUPABASE_URL}/rest/v1/ingrediente?return=representation`, {
-      method: 'POST',
-      body: JSON.stringify(dados)
-    });
-  },
+async criarIngredientes(receitaId, itens) {
+  const dados = itens.map(x => ({ receita_id: receitaId, nome: x.nome, qtde: x.qtde || null }));
+  return sFetch(`${SUPABASE_URL}/rest/v1/ingrediente`, {
+    method: 'POST',
+    headers: { ...headers, Prefer: 'return=representation' }, // <- aqui
+    body: JSON.stringify(dados)
+  });
+}
 
   async deletarIngrediente(id) {
     return sFetch(`${SUPABASE_URL}/rest/v1/ingrediente?id=eq.${id}`, {
