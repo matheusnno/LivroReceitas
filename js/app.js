@@ -98,6 +98,7 @@ const api = {
     // Criar ingredientes apenas se houver
     if (ingredientes && ingredientes.length > 0) {
       await api.criarIngredientes(receitaId, ingredientes);
+      console.log("Resultado do insert de ingredientes:", res);
     }
 
     // Buscar receita criada
