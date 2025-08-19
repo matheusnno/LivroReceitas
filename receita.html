@@ -1,0 +1,96 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <title>Detalhe da Receita</title>
+  <link rel="stylesheet" href="css/style.css" />
+</head>
+<body>
+  <header class="topbar">
+    <h1 id="titulo">Receita</h1>
+    <nav class="nav">
+      <a href="index.html">Listar</a>
+      <a href="nova.html">Nova Receita</a>
+    </nav>
+  </header>
+
+  <main class="container">
+    <section class="card">
+      <div class="card-header">
+        <h2>Informações</h2>
+      </div>
+      <div id="info" class="recipe-detail"></div>
+    </section>
+
+    <section class="card">
+      <div class="card-header">
+        <h2>Ingredientes</h2>
+      </div>
+      <ul id="listaIng" class="list"></ul>
+      <div class="form-inline">
+        <input id="novoIngNome" placeholder="Ingrediente" />
+        <input id="novoIngQtde" placeholder="Quantidade" />
+        <button id="btnAdd" class="btn">Adicionar</button>
+      </div>
+    </section>
+  </main>
+
+  <script src="js/app.js"></script>
+  <script>
+    const url = new URL(window.location.href);
+    const id = parseInt(url.searchParams.get('id') || '', 10);
+
+    async function carregar() {
+      const r = await api.obterReceita(id);
+      if (!r) {
+        document.getElementById('info').innerHTML = '<p class="muted">Receita não encontrada.</p>';
+        return;
+      }
+      document.getElementById('titulo').textContent = r.nome;
+      const info = [];
+      if (r.categoria) info.push('<strong>Categoria:</strong> ' + r.categoria);
+      if (r.tempo_preparo) info.push('<strong>Tempo de preparo:</strong> ' + r.tempo_preparo + ' min');
+      if (r.rendimento) info.push('<strong>Rendimento:</strong> ' + r.rendimento);
+      info.push('<strong>Modo de preparo:</strong><br>' + (r.modo_preparo || '').replaceAll('\n', '<br>'));
+
+      document.getElementById('info').innerHTML = '<div class="stack">' + info.map(x => '<div>' + x + '</div>').join('') + '</div>';
+
+      const ingredientes = await api.listarIngredientes(id);
+      const ul = document.getElementById('listaIng');
+      ul.innerHTML = '';
+      if (!ingredientes.length) {
+        ul.innerHTML = '<li class="muted">Nenhum ingrediente cadastrado.</li>';
+      } else {
+        ingredientes.forEach(i => {
+          const li = document.createElement('li');
+          li.innerHTML = '<span>' + i.nome + (i.qtde ? ' — <em>' + i.qtde + '</em>' : '') + '</span>';
+          const btn = document.createElement('button');
+          btn.textContent = 'Excluir';
+          btn.className = 'btn btn-danger btn-small';
+          btn.addEventListener('click', async () => {
+            if (confirm('Excluir ingrediente?')) {
+              await api.deletarIngrediente(i.id);
+              await carregar();
+            }
+          });
+          li.appendChild(btn);
+          ul.appendChild(li);
+        });
+      }
+    }
+
+    document.getElementById('btnAdd').addEventListener('click', async () => {
+      const nome = document.getElementById('novoIngNome').value.trim();
+      const qtde = document.getElementById('novoIngQtde').value.trim();
+      if (!nome) return;
+      await api.criarIngredientes(id, [{ nome, qtde: qtde || null }]);
+      document.getElementById('novoIngNome').value = '';
+      document.getElementById('novoIngQtde').value = '';
+      await carregar();
+    });
+
+    carregar();
+  </script>
+</body>
+</html>

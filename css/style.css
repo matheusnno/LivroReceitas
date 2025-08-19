@@ -1,0 +1,152 @@
+/* Reset simples + variáveis de tema */
+:root {
+  --bg: #0b0c10;
+  --panel: #111319;
+  --border: #202330;
+  --text: #e6e7eb;
+  --muted: #9aa0aa;
+  --primary: #6da9ff;
+  --danger: #ff6d6d;
+}
+
+* { box-sizing: border-box; }
+html, body { height: 100%; }
+body {
+  margin: 0;
+  font-family: system-ui, -apple-system, Segoe UI, Roboto, Ubuntu, Cantarell, Noto Sans, Arial, sans-serif;
+  color: var(--text);
+  background: radial-gradient(1200px 600px at 20% -10%, #182036 0%, transparent 60%) , var(--bg);
+}
+
+/* Topbar */
+.topbar {
+  position: sticky;
+  top: 0;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 1rem;
+  padding: 1rem 1.25rem;
+  background: rgba(11,12,16,0.7);
+  backdrop-filter: blur(10px);
+  border-bottom: 1px solid var(--border);
+}
+.topbar h1 { font-size: 1.25rem; margin: 0; }
+.nav a {
+  color: var(--text);
+  text-decoration: none;
+  padding: .5rem .75rem;
+  border-radius: 999px;
+  border: 1px solid transparent;
+}
+.nav a:hover { border-color: var(--border); }
+.nav a.active { background: var(--panel); border-color: var(--border); }
+
+/* Layout */
+.container {
+  margin: 1.25rem auto;
+  padding: 0 1rem;
+  max-width: 1000px;
+}
+.card {
+  background: var(--panel);
+  border: 1px solid var(--border);
+  border-radius: 16px;
+  padding: 1rem;
+  box-shadow: 0 10px 30px rgba(0,0,0,.15);
+}
+.card + .card { margin-top: 1rem; }
+.card-header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 1rem;
+  margin-bottom: .75rem;
+}
+.actions { display: flex; gap: .5rem; flex-wrap: wrap; }
+
+/* Grid de cards */
+.grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(260px, 1fr));
+  gap: .75rem;
+}
+
+.recipe-card {
+  display: flex;
+  flex-direction: column;
+  gap: .5rem;
+  padding: .75rem;
+  border: 1px solid var(--border);
+  border-radius: 14px;
+  background: #0f121a;
+}
+.recipe-card-body { flex: 1; }
+.recipe-title { margin: 0 0 .25rem; font-size: 1.05rem; }
+.recipe-meta { margin: 0; color: var(--muted); font-size: .9rem; }
+.recipe-card-actions { display: flex; gap: .5rem; }
+
+/* Formulários */
+.form label { display: flex; flex-direction: column; gap: .35rem; }
+.form input, .form textarea, input[type="search"], .form-inline input {
+  width: 100%;
+  padding: .65rem .75rem;
+  border-radius: 10px;
+  border: 1px solid var(--border);
+  background: #0f121a;
+  color: var(--text);
+}
+.form textarea { resize: vertical; }
+.form-actions { display: flex; gap: .5rem; margin-top: .5rem; flex-wrap: wrap; }
+.grid-2 { display: grid; gap: .75rem; grid-template-columns: repeat(auto-fit, minmax(220px, 1fr)); }
+
+/* Subcard (ingredientes) */
+.subcard {
+  margin-top: .75rem;
+  padding: .75rem;
+  border: 1px dashed var(--border);
+  border-radius: 12px;
+}
+.subcard-header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  margin-bottom: .5rem;
+}
+.ing-row { display: grid; gap: .5rem; grid-template-columns: 1fr 1fr auto; margin-bottom: .5rem; }
+
+/* Detalhe */
+.recipe-detail .stack > div { margin-bottom: .5rem; }
+.list { list-style: none; padding: 0; margin: 0; }
+.list li {
+  display: flex; align-items: center; justify-content: space-between;
+  padding: .5rem .75rem; border: 1px solid var(--border); border-radius: 10px; margin-bottom: .5rem;
+  background: #0f121a;
+}
+
+/* Botões */
+.btn {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  padding: .55rem .9rem;
+  border-radius: 10px;
+  border: 1px solid var(--border);
+  background: linear-gradient(to bottom right, #1a2240, #12182d);
+  color: #eaf0ff;
+  cursor: pointer;
+}
+.btn:hover { filter: brightness(1.05); }
+.btn:active { transform: translateY(1px); }
+.btn-small { padding: .35rem .6rem; font-size: .9rem; }
+.btn-ghost { background: transparent; color: var(--text); }
+.btn-danger { background: linear-gradient(to bottom right, #401a1a, #2d1212); color: #ffdede; }
+
+/* Vários */
+.muted { color: var(--muted); }
+.form-inline { display: grid; gap: .5rem; grid-template-columns: 2fr 1fr auto; margin-top: .5rem; }
+
+@media (max-width: 520px) {
+  .form-inline { grid-template-columns: 1fr; }
+  .ing-row { grid-template-columns: 1fr; }
+}

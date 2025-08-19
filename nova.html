@@ -1,0 +1,129 @@
+	<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <title>Nova Receita</title>
+  <link rel="stylesheet" href="css/style.css" />
+</head>
+<body>
+  <header class="topbar">
+    <h1>Nova Receita</h1>
+    <nav class="nav">
+      <a href="index.html">Listar</a>
+      <a href="nova.html" class="active">Nova Receita</a>
+    </nav>
+  </header>
+
+  <main class="container">
+    <form id="formReceita" class="card form">
+      <div class="grid-2">
+        <label>
+          <span>Nome*</span>
+          <input name="nome" required maxlength="200" />
+        </label>
+        <label>
+          <span>Categoria</span>
+          <input name="categoria" placeholder="Sobremesa, Massa, Bebida…" />
+        </label>
+      </div>
+
+      <div class="grid-2">
+        <label>
+          <span>Tempo de preparo (min)</span>
+          <input name="tempo_preparo" type="number" min="0" step="1" />
+        </label>
+        <label>
+          <span>Rendimento</span>
+          <input name="rendimento" placeholder="8 fatias, 4 porções…" />
+        </label>
+      </div>
+
+      <label>
+        <span>Modo de preparo*</span>
+        <textarea name="modo_preparo" required rows="6"
+          placeholder="Descreva o passo a passo…"></textarea>
+      </label>
+
+      <section class="subcard">
+        <div class="subcard-header">
+          <h3>Ingredientes</h3>
+          <button type="button" id="btnAddIng" class="btn btn-ghost">+ Adicionar ingrediente</button>
+        </div>
+        <div id="ingredientes"></div>
+      </section>
+
+      <div class="form-actions">
+        <button class="btn" type="submit">Salvar</button>
+        <a class="btn btn-ghost" href="index.html">Cancelar</a>
+      </div>
+    </form>
+  </main>
+
+  <template id="tpl-ing">
+    <div class="ing-row">
+      <input class="ing-nome" placeholder="Ingrediente (ex: Farinha de trigo)" required />
+      <input class="ing-qtde" placeholder="Quantidade (ex: 2 xícaras)" />
+      <button type="button" class="btn btn-danger btn-small btn-rem">Remover</button>
+    </div>
+  </template>
+
+  <script src="js/app.js"></script>
+  <script>
+    const ingContainer = document.getElementById('ingredientes');
+    const tplIng = document.getElementById('tpl-ing');
+
+    function addIng(nome = '', qtde = '') {
+      const node = tplIng.content.cloneNode(true);
+      node.querySelector('.ing-nome').value = nome;
+      node.querySelector('.ing-qtde').value = qtde;
+      node.querySelector('.btn-rem').addEventListener('click', (e) => {
+        e.target.closest('.ing-row').remove();
+      });
+      ingContainer.appendChild(node);
+    }
+
+    document.getElementById('btnAddIng').addEventListener('click', () => addIng());
+
+    // Comece com 3 linhas de ingrediente
+    addIng(); addIng(); addIng();
+
+    document.getElementById('formReceita').addEventListener('submit', async (e) => {
+      e.preventDefault();
+      const form = e.target;
+      const data = Object.fromEntries(new FormData(form));
+
+      const receita = {
+        nome: (data.nome || '').trim(),
+        categoria: (data.categoria || '').trim() || null,
+        modo_preparo: (data.modo_preparo || '').trim(),
+        tempo_preparo: data.tempo_preparo ? parseInt(data.tempo_preparo, 10) : null,
+        rendimento: (data.rendimento || '').trim() || null,
+      };
+
+      if (!receita.nome || !receita.modo_preparo) {
+        alert('Preencha os campos obrigatórios.');
+        return;
+      }
+
+      // Montar array de ingredientes
+      const linhas = Array.from(document.querySelectorAll('.ing-row'));
+      const ingredientes = linhas
+        .map(l => ({
+          nome: l.querySelector('.ing-nome').value.trim(),
+          qtde: l.querySelector('.ing-qtde').value.trim() || null
+        }))
+        .filter(x => x.nome);
+
+      try {
+        // Criar receita + ingredientes juntos
+        const receitaCompleta = await api.criarReceitaCompleta(receita, ingredientes);
+        window.location.href = 'receita.html?id=' + encodeURIComponent(receitaCompleta.id);
+      } catch (err) {
+        alert('Não foi possível salvar a receita.');
+        console.error(err);
+      }
+    });
+  </script>
+</body>
+</html>
