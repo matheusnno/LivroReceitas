@@ -118,14 +118,12 @@ body {
   gap: 8px; /* Espaçamento entre os inputs */
   margin-bottom: 8px; /* Espaço entre cada linha de ingrediente */
 }
-
 .ing-row input {
-  flex: 1; /* Cada input ocupa espaço igual */
-  min-width: 0; /* Evita que quebre linha */
+  flex: 1; /* Nome ocupa a maior parte */
+  min-width: 0;
 }
-
 .ing-qtde {
-  flex: 0.5; /* Quantidade ocupa menos espaço que o nome */
+  flex: 0.5; /* Quantidade ocupa menos espaço */
 }
 
 /* Detalhe */
@@ -159,7 +157,15 @@ body {
 .muted { color: var(--muted); }
 .form-inline { display: grid; gap: .5rem; grid-template-columns: 2fr 1fr auto; margin-top: .5rem; }
 
+/* Ajuste para mobile */
 @media (max-width: 520px) {
   .form-inline { grid-template-columns: 1fr; }
-  .ing-row { grid-template-columns: 1fr; }
+
+  /* Ingredientes empilhados verticalmente em telas pequenas */
+  .ing-row {
+    flex-direction: column;
+  }
+  .ing-row input {
+    flex: 1; /* Ocupa toda a largura */
+  }
 }
