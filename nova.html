@@ -1,4 +1,4 @@
-	<!DOCTYPE html>
+<!DOCTYPE html>
 <html lang="pt-BR">
 <head>
   <meta charset="UTF-8" />
@@ -116,11 +116,11 @@
         .filter(x => x.nome);
 
       try {
-        // Criar receita + ingredientes juntos
+        // Criar receita + ingredientes juntos usando função corrigida
         const receitaCompleta = await api.criarReceitaCompleta(receita, ingredientes);
         window.location.href = 'receita.html?id=' + encodeURIComponent(receitaCompleta.id);
       } catch (err) {
-        alert('Não foi possível salvar a receita.');
+        alert('Não foi possível salvar a receita. Tente novamente.');
         console.error(err);
       }
     });
