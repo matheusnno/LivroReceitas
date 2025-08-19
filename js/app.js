@@ -10,37 +10,40 @@ const headers = {
   "Content-Type": "application/json"
 };
 
-// Função utilitária para fetch com tratamento de erro
+// Função de fetch com tratamento de erro
 async function sFetch(url, options = {}) {
-  const resp = await fetch(url, { headers, ...options });
-  if (!resp.ok) {
-    const txt = await resp.text().catch(() => '');
-    console.error('Erro REST', resp.status, txt);
-    throw new Error('Falha na chamada REST: ' + resp.status);
+  try {
+    const resp = await fetch(url, { headers, ...options });
+    if (!resp.ok) {
+      const txt = await resp.text().catch(() => '');
+      console.error('Erro REST', resp.status, txt);
+      throw new Error('Falha na chamada REST: ' + resp.status);
+    }
+    const contentType = resp.headers.get('content-type') || '';
+    if (contentType.includes('application/json')) return resp.json();
+    return resp.text();
+  } catch (err) {
+    console.error("Erro de fetch:", err);
+    throw err;
   }
-  const contentType = resp.headers.get('content-type') || '';
-  if (contentType.includes('application/json')) return resp.json();
-  return resp.text();
 }
 
-// API pública da aplicação
+// API da aplicação
 const api = {
-  // Receitas
   async listarReceitas(termo = '') {
     if (!termo) {
       return sFetch(`${SUPABASE_URL}/rest/v1/receita?select=*&order=criado_em.desc`);
     } else {
-      // Busca por nome na tabela receita
       const nomeQuery = `${SUPABASE_URL}/rest/v1/receita?select=*&nome=ilike.*${encodeURIComponent(termo)}*&order=criado_em.desc`;
       const receitasPorNome = await sFetch(nomeQuery);
-      // Busca por ingrediente
+
       const ingQuery = `${SUPABASE_URL}/rest/v1/ingrediente?select=receita_id&nome=ilike.*${encodeURIComponent(termo)}*`;
       const ing = await sFetch(ingQuery);
       const idsIng = [...new Set(ing.map(i => i.receita_id))];
       const byIds = idsIng.length
         ? await sFetch(`${SUPABASE_URL}/rest/v1/receita?select=*&id=in.(${idsIng.join(',')})`)
         : [];
-      // Unir e remover duplicados
+
       const map = new Map();
       [...receitasPorNome, ...byIds].forEach(r => map.set(r.id, r));
       return Array.from(map.values()).sort((a,b) => (new Date(b.criado_em||0)) - (new Date(a.criado_em||0)));
@@ -65,12 +68,12 @@ const api = {
     });
   },
 
-  // Ingredientes
   async listarIngredientes(receitaId) {
     return sFetch(`${SUPABASE_URL}/rest/v1/ingrediente?select=*&receita_id=eq.${receitaId}&order=id.asc`);
   },
 
   async criarIngredientes(receitaId, itens) {
+    if (!itens || itens.length === 0) return [];
     const dados = itens.map(x => ({ receita_id: receitaId, nome: x.nome, qtde: x.qtde || null }));
     return sFetch(`${SUPABASE_URL}/rest/v1/ingrediente`, {
       method: 'POST',
@@ -84,38 +87,36 @@ const api = {
     });
   },
 
-  // Cria receita + ingredientes juntos
+  // Função que cria receita + ingredientes de forma segura
   async criarReceitaCompleta(receita, ingredientes) {
-  try {
-    // Criar a receita
-    const novaReceita = await api.criarReceita(receita);
-    if (!novaReceita || !novaReceita[0] || !novaReceita[0].id) {
-      console.error("Resposta inválida do Supabase:", novaReceita);
-      throw new Error("Não foi possível criar a receita");
+    try {
+      // 1️⃣ Criar a receita
+      const novaReceita = await api.criarReceita(receita);
+      console.log("Resposta do insert da receita:", novaReceita);
+
+      if (!novaReceita || !novaReceita[0] || !novaReceita[0].id) {
+        throw new Error("Não foi possível criar a receita");
+      }
+      const receitaId = novaReceita[0].id;
+
+      // 2️⃣ Criar ingredientes, se houver
+      let listaIngredientes = [];
+      if (ingredientes && ingredientes.length > 0) {
+        const resIng = await api.criarIngredientes(receitaId, ingredientes);
+        console.log("Resposta do insert dos ingredientes:", resIng);
+
+        // Listar ingredientes criados
+        listaIngredientes = await api.listarIngredientes(receitaId);
+      }
+
+      // 3️⃣ Retornar receita completa
+      const receitaCompleta = await api.obterReceita(receitaId);
+      receitaCompleta.ingredientes = listaIngredientes || [];
+
+      return receitaCompleta;
+    } catch (err) {
+      console.error("Erro ao criar receita completa:", err);
+      throw err;
     }
-    const receitaId = novaReceita[0].id;
-
-    // Criar ingredientes apenas se houver
-    if (ingredientes && ingredientes.length > 0) {
-      await api.criarIngredientes(receitaId, ingredientes);
-      console.log("Resultado do insert de ingredientes:", res);
-    }
-
-    // Buscar receita criada
-    const receitaCompleta = await api.obterReceita(receitaId);
-
-    // Buscar ingredientes apenas se houver
-    let listaIngredientes = [];
-    if (ingredientes && ingredientes.length > 0) {
-      listaIngredientes = await api.listarIngredientes(receitaId);
-    }
-    receitaCompleta.ingredientes = listaIngredientes || [];
-
-    return receitaCompleta;
-  } catch (err) {
-    console.error("Erro ao criar receita completa:", err);
-    throw err;
   }
-}
-
 };
