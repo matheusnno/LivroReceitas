@@ -40,20 +40,21 @@
       </div>
     </article>
   </template>
-  <script src="https://unpkg.com/@supabase/supabase-js@2"></script>
+
   <script src="js/app.js"></script>
   <script>
-    // Carregar e renderizar receitas
     async function carregar() {
       const termo = (document.getElementById('busca').value || '').trim();
       const receitas = await api.listarReceitas(termo);
       const lista = document.getElementById('lista');
       lista.innerHTML = '';
       const tpl = document.getElementById('tpl-receita-card');
+
       if (!receitas.length) {
         lista.innerHTML = '<p class="muted">Nenhuma receita encontrada.</p>';
         return;
       }
+
       receitas.forEach(r => {
         const node = tpl.content.cloneNode(true);
         node.querySelector('.recipe-title').textContent = r.nome;
@@ -63,8 +64,9 @@
         if (r.rendimento) meta.push(r.rendimento);
         node.querySelector('.recipe-meta').textContent = meta.join(' • ');
 
+        // Abrir em nova.html para edição
         const link = node.querySelector('.ver-receita');
-        link.href = 'receita.html?id=' + encodeURIComponent(r.id);
+        link.href = 'nova.html?id=' + encodeURIComponent(r.id);
 
         const btnDel = node.querySelector('.deletar-receita');
         btnDel.addEventListener('click', async () => {
