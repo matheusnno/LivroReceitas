@@ -114,7 +114,7 @@ body {
   margin-bottom: .5rem;
 }
 
-/* Linha de Ingrediente: Nome | Quantidade | Remover (sempre lado a lado) */
+/* Linha de Ingrediente em nova.html: Nome | Quantidade | Remover (sempre lado a lado) */
 .ing-row {
   display: grid;
   grid-template-columns: 2fr 1fr auto; /* Nome, Quantidade, Botão */
@@ -122,22 +122,38 @@ body {
   margin-bottom: 8px;
   align-items: center;
 }
-
 .ing-row input.ing-nome,
 .ing-row input.ing-qtde {
   width: 100%;
   min-width: 0;           /* permite encolher sem quebrar linha */
-  padding: 6px;           /* menor para caber no retrato */
-  font-size: 14px;        /* levemente menor no retrato */
+  padding: 6px;
+  font-size: 14px;
   border-radius: 10px;
   border: 1px solid var(--border);
   background: #0f121a;
   color: var(--text);
 }
-
 .ing-row button.btn-rem {
   justify-self: end;       /* mantém o botão à direita */
-  white-space: nowrap;     /* evita quebra do texto */
+  white-space: nowrap;
+  padding: 6px 10px;
+  font-size: 14px;
+}
+
+/* Linha de adição/edição em receita.html (mantém lado a lado em qualquer largura) */
+.form-inline {
+  display: grid;
+  grid-template-columns: 2fr 1fr auto; /* Ingrediente, Quantidade, Botão */
+  gap: 6px;
+  margin-top: .5rem;
+}
+.form-inline input {
+  min-width: 0;
+  padding: 6px;
+  font-size: 14px;
+}
+.form-inline .btn {
+  white-space: nowrap;
   padding: 6px 10px;
   font-size: 14px;
 }
@@ -163,7 +179,7 @@ body {
   color: #eaf0ff;
   cursor: pointer;
 }
-.btn:hover { filter: brightness(1.05)); }
+.btn:hover { filter: brightness(1.05); }
 .btn:active { transform: translateY(1px); }
 .btn-small { padding: .35rem .6rem; font-size: .9rem; }
 .btn-ghost { background: transparent; color: var(--text); }
@@ -171,25 +187,12 @@ body {
 
 /* Vários */
 .muted { color: var(--muted); }
-.form-inline { display: grid; gap: .5rem; grid-template-columns: 2fr 1fr auto; margin-top: .5rem; }
 
-/* Ajuste para mobile (mantém Nome|Qtde|Botão lado a lado) */
+/* Ajuste para mobile: mantém 3 colunas, só compacta espaçamentos/tipos */
 @media (max-width: 520px) {
-  .form-inline { grid-template-columns: 1fr; }
+  .ing-row { gap: 4px; }
+  .ing-row button.btn-rem { padding: 6px 8px; font-size: 13px; }
 
-  /* Mantemos 3 colunas para ingredientes no retrato,
-     apenas deixando inputs e botão mais compactos */
-  .ing-row {
-    grid-template-columns: 2fr 1fr auto;
-    gap: 4px;
-  }
-  .ing-row input.ing-nome,
-  .ing-row input.ing-qtde {
-    padding: 6px;
-    font-size: 14px;
-  }
-  .ing-row button.btn-rem {
-    padding: 6px 8px;
-    font-size: 13px;
-  }
+  .form-inline { gap: 4px; }
+  .form-inline .btn { padding: 6px 8px; font-size: 13px; }
 }
