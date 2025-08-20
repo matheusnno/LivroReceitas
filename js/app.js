@@ -3,88 +3,155 @@
 const SUPABASE_URL = "https://flalhcrfneubfhyzqbxe.supabase.co";
 const SUPABASE_KEY = "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImZsYWxoY3JmbmV1YmZoeXpxYnhlIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NTU2MjU2NTEsImV4cCI6MjA3MTIwMTY1MX0.LwYrDgtofJaDfvofHcUeZYnUh0SBk_UxXh2HQgiCwFI";
 
-// Config Supabase - já deve estar definidas SUPABASE_URL e SUPABASE_KEY
-const supabaseClient = window.supabase.createClient(SUPABASE_URL, SUPABASE_KEY);
+// Cabeçalhos padrão para REST
+const headers = {
+  "apikey": SUPABASE_KEY,
+  "Authorization": "Bearer " + SUPABASE_KEY,
+  "Content-Type": "application/json"
+};
 
-async function carregar() {
-    const { data, error } = await supabaseClient.from("receita").select("id, nome, ingrediente(id, nome, quantidade)");
-    if (error) {
-        console.error("Erro ao carregar receitas:", error);
-        return;
+// Função utilitária para fetch com tratamento de erro
+async function sFetch(url, options = {}) {
+  const resp = await fetch(url, { headers, ...options });
+  if (!resp.ok) {
+    const txt = await resp.text().catch(() => '');
+    console.error('Erro REST', resp.status, txt);
+    throw new Error('Falha na chamada REST: ' + resp.status);
+  }
+  const contentType = resp.headers.get('content-type') || '';
+  if (contentType.includes('application/json')) return resp.json();
+  return resp.text();
+}
+
+// API pública da aplicação
+const api = {
+  // Receitas
+  async listarReceitas(termo = '') {
+    if (!termo) {
+      return sFetch(`${SUPABASE_URL}/rest/v1/receita?select=*&order=criado_em.desc`);
+    } else {
+      const nomeQuery = `${SUPABASE_URL}/rest/v1/receita?select=*&nome=ilike.*${encodeURIComponent(termo)}*&order=criado_em.desc`;
+      const receitasPorNome = await sFetch(nomeQuery);
+
+      const ingQuery = `${SUPABASE_URL}/rest/v1/ingrediente?select=receita_id&nome=ilike.*${encodeURIComponent(termo)}*`;
+      const ing = await sFetch(ingQuery);
+      const idsIng = [...new Set(ing.map(i => i.receita_id))];
+      const byIds = idsIng.length
+        ? await sFetch(`${SUPABASE_URL}/rest/v1/receita?select=*&id=in.(${idsIng.join(',')})`)
+        : [];
+
+      const map = new Map();
+      [...receitasPorNome, ...byIds].forEach(r => map.set(r.id, r));
+      return Array.from(map.values()).sort((a,b) => (new Date(b.criado_em||0)) - (new Date(a.criado_em||0)));
     }
+  },
 
-    const lista = document.getElementById("lista");
-    lista.innerHTML = "";
-    data.forEach((receita) => {
-        const li = document.createElement("li");
-        li.innerHTML = `
-            <strong>${receita.nome}</strong>
-            <button onclick="editarReceita(${receita.id}, '${receita.nome}')">✏️</button>
-            <button onclick="deletarReceita(${receita.id})">🗑️</button>
-            <ul>
-                ${receita.ingrediente.map(ing => `
-                    <li>
-                        ${ing.nome} - ${ing.quantidade}
-                        <button onclick="editarIngrediente(${ing.id}, '${ing.nome}', '${ing.quantidade}')">✏️</button>
-                        <button onclick="deletarIngrediente(${ing.id})">🗑️</button>
-                    </li>
-                `).join("")}
-            </ul>
-            <button onclick="adicionarIngrediente(${receita.id})">+ Ingrediente</button>
-        `;
-        lista.appendChild(li);
+  async obterReceita(id) {
+    const res = await sFetch(`${SUPABASE_URL}/rest/v1/receita?select=*&id=eq.${id}`);
+    return res[0] || null;
+  },
+
+  async criarReceita(data) {
+    return sFetch(`${SUPABASE_URL}/rest/v1/receita`, {
+      method: 'POST',
+      body: JSON.stringify(data)
     });
-}
+  },
 
-async function adicionarReceita() {
-    const nome = document.getElementById("nome").value;
-    if (!nome) return;
+  async atualizarReceita(id, data) {
+    return sFetch(`${SUPABASE_URL}/rest/v1/receita?id=eq.${id}`, {
+      method: 'PATCH',
+      body: JSON.stringify(data)
+    });
+  },
 
-    const { error } = await supabaseClient.from("receita").insert([{ nome }]);
-    if (error) console.error("Erro ao adicionar receita:", error);
-    document.getElementById("nome").value = "";
-    carregar();
-}
+  async deletarReceita(id) {
+    return sFetch(`${SUPABASE_URL}/rest/v1/receita?id=eq.${id}`, {
+      method: 'DELETE'
+    });
+  },
 
-async function deletarReceita(id) {
-    await supabaseClient.from("ingrediente").delete().eq("receita_id", id);
-    await supabaseClient.from("receita").delete().eq("id", id);
-    carregar();
-}
+  // Ingredientes
+  async listarIngredientes(receitaId) {
+    return sFetch(`${SUPABASE_URL}/rest/v1/ingrediente?select=*&receita_id=eq.${receitaId}&order=id.asc`);
+  },
 
-async function adicionarIngrediente(receitaId) {
-    const nome = prompt("Nome do ingrediente:");
-    const quantidade = prompt("Quantidade:");
-    if (!nome || !quantidade) return;
+  async criarIngredientes(receitaId, itens) {
+    const dados = itens.map(x => ({ receita_id: receitaId, nome: x.nome, qtde: x.qtde || null }));
+    return sFetch(`${SUPABASE_URL}/rest/v1/ingrediente`, {
+      method: 'POST',
+      body: JSON.stringify(dados)
+    });
+  },
 
-    await supabaseClient.from("ingrediente").insert([{ nome, quantidade, receita_id: receitaId }]);
-    carregar();
-}
+  async atualizarIngrediente(id, data) {
+    return sFetch(`${SUPABASE_URL}/rest/v1/ingrediente?id=eq.${id}`, {
+      method: 'PATCH',
+      body: JSON.stringify(data)
+    });
+  },
 
-async function deletarIngrediente(id) {
-    await supabaseClient.from("ingrediente").delete().eq("id", id);
-    carregar();
-}
+  async deletarIngrediente(id) {
+    return sFetch(`${SUPABASE_URL}/rest/v1/ingrediente?id=eq.${id}`, {
+      method: 'DELETE'
+    });
+  },
 
-// -------- NOVAS FUNÇÕES --------
-async function editarReceita(id, nomeAtual) {
-    const novoNome = prompt("Novo nome da receita:", nomeAtual);
-    if (!novoNome) return;
+  // Cria receita + ingredientes juntos
+  async criarReceitaCompleta(receita, ingredientes) {
+    try {
+      const novaReceita = await api.criarReceita(receita);
+      if (!novaReceita || !novaReceita[0] || !novaReceita[0].id) {
+        console.error("Resposta inválida do Supabase:", novaReceita);
+        throw new Error("Não foi possível criar a receita");
+      }
+      const receitaId = novaReceita[0].id;
 
-    const { error } = await supabaseClient.from("receita").update({ nome: novoNome }).eq("id", id);
-    if (error) console.error("Erro ao editar receita:", error);
-    carregar();
-}
+      if (ingredientes && ingredientes.length > 0) {
+        await api.criarIngredientes(receitaId, ingredientes);
+      }
 
-async function editarIngrediente(id, nomeAtual, quantidadeAtual) {
-    const novoNome = prompt("Novo nome do ingrediente:", nomeAtual);
-    const novaQuantidade = prompt("Nova quantidade:", quantidadeAtual);
-    if (!novoNome || !novaQuantidade) return;
+      const receitaCompleta = await api.obterReceita(receitaId);
+      receitaCompleta.ingredientes = ingredientes.length ? await api.listarIngredientes(receitaId) : [];
 
-    const { error } = await supabaseClient.from("ingrediente").update({ nome: novoNome, quantidade: novaQuantidade }).eq("id", id);
-    if (error) console.error("Erro ao editar ingrediente:", error);
-    carregar();
-}
+      return receitaCompleta;
+    } catch (err) {
+      console.error("Erro ao criar receita completa:", err);
+      throw err;
+    }
+  },
 
-// Inicializar
-carregar();
+  // Atualiza receita + ingredientes
+  async atualizarReceitaCompleta(receitaId, receitaData, ingredientesNovos) {
+    try {
+      // Atualizar receita
+      await api.atualizarReceita(receitaId, receitaData);
+
+      // Atualizar ou criar ingredientes
+      const existentes = await api.listarIngredientes(receitaId);
+
+      // Mapear nomes para id existentes
+      const mapExist = new Map(existentes.map(i => [i.nome, i]));
+
+      for (let ing of ingredientesNovos) {
+        if (mapExist.has(ing.nome)) {
+          const existente = mapExist.get(ing.nome);
+          await api.atualizarIngrediente(existente.id, { qtde: ing.qtde || null });
+          mapExist.delete(ing.nome);
+        } else {
+          await api.criarIngredientes(receitaId, [ing]);
+        }
+      }
+
+      // Deletar ingredientes que sobraram
+      for (let ing of mapExist.values()) {
+        await api.deletarIngrediente(ing.id);
+      }
+
+      return await api.obterReceita(receitaId);
+    } catch (err) {
+      console.error("Erro ao atualizar receita completa:", err);
+      throw err;
+    }
+  }
+};
