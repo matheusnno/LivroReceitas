@@ -1,34 +1,98 @@
-<!DOCTYPE html>
-<html lang="pt-BR">
-<head>
-  <meta charset="UTF-8">
-  <title>Detalhes da Receita</title>
-  <link rel="stylesheet" href="style.css">
-</head>
-<body>
-  <h1 id="nome-receita"></h1>
-  <p id="descricao-receita"></p>
+<section class="card">
+  <div class="card-header">
+    <h2>Informações</h2>
+  </div>
+  <form id="formEditReceita" class="recipe-detail">
+    <label>
+      <span>Nome*</span>
+      <input name="nome" required />
+    </label>
+    <label>
+      <span>Categoria</span>
+      <input name="categoria" />
+    </label>
+    <label>
+      <span>Tempo de preparo (min)</span>
+      <input name="tempo_preparo" type="number" min="0" step="1" />
+    </label>
+    <label>
+      <span>Rendimento</span>
+      <input name="rendimento" />
+    </label>
+    <label>
+      <span>Modo de preparo*</span>
+      <textarea name="modo_preparo" rows="6" required></textarea>
+    </label>
+    <div class="form-actions">
+      <button class="btn" type="submit">Salvar alterações</button>
+    </div>
+  </form>
+</section>
 
-  <h3>Ingredientes</h3>
-  <ul id="ingredientes-list"></ul>
+<script>
+async function carregar() {
+  const r = await api.obterReceita(id);
+  if (!r) return;
 
-  <button id="btn-editar">Editar Receita</button>
-  <button id="btn-voltar">Voltar</button>
+  document.getElementById('titulo').textContent = r.nome;
+  const form = document.getElementById('formEditReceita');
+  form.nome.value = r.nome;
+  form.categoria.value = r.categoria || '';
+  form.tempo_preparo.value = r.tempo_preparo || '';
+  form.rendimento.value = r.rendimento || '';
+  form.modo_preparo.value = r.modo_preparo || '';
 
-  <script src="app.js"></script>
-  <script>
-    const params = new URLSearchParams(window.location.search);
-    const receitaId = params.get("id");
-
-    document.getElementById("btn-editar").addEventListener("click", () => {
-      window.location.href = `nova.html?id=${receitaId}`;
+  const ingredientes = await api.listarIngredientes(id);
+  const ul = document.getElementById('listaIng');
+  ul.innerHTML = '';
+  if (!ingredientes.length) {
+    ul.innerHTML = '<li class="muted">Nenhum ingrediente cadastrado.</li>';
+  } else {
+    ingredientes.forEach(i => {
+      const li = document.createElement('li');
+      li.innerHTML = `
+        <input value="${i.nome}" readonly />
+        <input value="${i.qtde || ''}" />
+        <button class="btn btn-danger btn-small">Excluir</button>
+      `;
+      li.querySelector('button').addEventListener('click', async () => {
+        if (confirm('Excluir ingrediente?')) {
+          await api.deletarIngrediente(i.id);
+          await carregar();
+        }
+      });
+      ul.appendChild(li);
     });
+  }
+}
 
-    document.getElementById("btn-voltar").addEventListener("click", () => {
-      window.location.href = "index.html";
-    });
+document.getElementById('formEditReceita').addEventListener('submit', async (e) => {
+  e.preventDefault();
+  const form = e.target;
+  const data = {
+    nome: form.nome.value.trim(),
+    categoria: form.categoria.value.trim() || null,
+    modo_preparo: form.modo_preparo.value.trim(),
+    tempo_preparo: form.tempo_preparo.value ? parseInt(form.tempo_preparo.value,10) : null,
+    rendimento: form.rendimento.value.trim() || null
+  };
 
-    // já existe lógica no app.js para carregar os dados da receita + ingredientes
-  </script>
-</body>
-</html>
+  // Ingredientes
+  const linhas = Array.from(document.querySelectorAll('#listaIng li'));
+  const ingredientes = linhas.map(l => ({
+    nome: l.querySelector('input:nth-child(1)').value.trim(),
+    qtde: l.querySelector('input:nth-child(2)').value.trim() || null
+  })).filter(x => x.nome);
+
+  try {
+    await api.atualizarReceitaCompleta(id, data, ingredientes);
+    alert('Receita atualizada com sucesso!');
+    await carregar();
+  } catch(err) {
+    console.error(err);
+    alert('Falha ao atualizar a receita.');
+  }
+});
+
+carregar();
+</script>
