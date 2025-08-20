@@ -155,3 +155,43 @@ const api = {
     }
   }
 };
+// Atualiza receita + ingredientes existentes
+async function atualizarReceitaCompleta(id, receitaAtualizada, ingredientes) {
+  try {
+    // Atualizar dados da receita
+    await sFetch(`${SUPABASE_URL}/rest/v1/receita?id=eq.${id}`, {
+      method: 'PATCH',
+      body: JSON.stringify(receitaAtualizada)
+    });
+
+    // Apagar ingredientes antigos
+    await sFetch(`${SUPABASE_URL}/rest/v1/ingrediente?receita_id=eq.${id}`, {
+      method: 'DELETE'
+    });
+
+    // Inserir novos ingredientes
+    if (ingredientes && ingredientes.length > 0) {
+      const dados = ingredientes.map(x => ({
+        receita_id: id,
+        nome: x.nome,
+        qtde: x.qtde || null
+      }));
+      await sFetch(`${SUPABASE_URL}/rest/v1/ingrediente`, {
+        method: 'POST',
+        body: JSON.stringify(dados)
+      });
+    }
+
+    // Retornar receita atualizada com ingredientes
+    const receitaCompleta = await api.obterReceita(id);
+    receitaCompleta.ingredientes = await api.listarIngredientes(id);
+    return receitaCompleta;
+
+  } catch (err) {
+    console.error("Erro ao atualizar receita completa:", err);
+    throw err;
+  }
+}
+
+// Adicione dentro do objeto api:
+api.atualizarReceitaCompleta = atualizarReceitaCompleta;
