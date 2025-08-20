@@ -7,7 +7,7 @@ const SUPABASE_KEY = "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZ
 const supabaseClient = window.supabase.createClient(SUPABASE_URL, SUPABASE_KEY);
 
 async function carregar() {
-    const { data, error } = await supabaseClient.from("receitas").select("id, nome, ingredientes(id, nome, quantidade)");
+    const { data, error } = await supabaseClient.from("receita").select("id, nome, ingrediente(id, nome, quantidade)");
     if (error) {
         console.error("Erro ao carregar receitas:", error);
         return;
@@ -22,7 +22,7 @@ async function carregar() {
             <button onclick="editarReceita(${receita.id}, '${receita.nome}')">✏️</button>
             <button onclick="deletarReceita(${receita.id})">🗑️</button>
             <ul>
-                ${receita.ingredientes.map(ing => `
+                ${receita.ingrediente.map(ing => `
                     <li>
                         ${ing.nome} - ${ing.quantidade}
                         <button onclick="editarIngrediente(${ing.id}, '${ing.nome}', '${ing.quantidade}')">✏️</button>
@@ -40,15 +40,15 @@ async function adicionarReceita() {
     const nome = document.getElementById("nome").value;
     if (!nome) return;
 
-    const { error } = await supabaseClient.from("receitas").insert([{ nome }]);
+    const { error } = await supabaseClient.from("receita").insert([{ nome }]);
     if (error) console.error("Erro ao adicionar receita:", error);
     document.getElementById("nome").value = "";
     carregar();
 }
 
 async function deletarReceita(id) {
-    await supabaseClient.from("ingredientes").delete().eq("receita_id", id);
-    await supabaseClient.from("receitas").delete().eq("id", id);
+    await supabaseClient.from("ingrediente").delete().eq("receita_id", id);
+    await supabaseClient.from("receita").delete().eq("id", id);
     carregar();
 }
 
@@ -57,12 +57,12 @@ async function adicionarIngrediente(receitaId) {
     const quantidade = prompt("Quantidade:");
     if (!nome || !quantidade) return;
 
-    await supabaseClient.from("ingredientes").insert([{ nome, quantidade, receita_id: receitaId }]);
+    await supabaseClient.from("ingrediente").insert([{ nome, quantidade, receita_id: receitaId }]);
     carregar();
 }
 
 async function deletarIngrediente(id) {
-    await supabaseClient.from("ingredientes").delete().eq("id", id);
+    await supabaseClient.from("ingrediente").delete().eq("id", id);
     carregar();
 }
 
@@ -71,7 +71,7 @@ async function editarReceita(id, nomeAtual) {
     const novoNome = prompt("Novo nome da receita:", nomeAtual);
     if (!novoNome) return;
 
-    const { error } = await supabaseClient.from("receitas").update({ nome: novoNome }).eq("id", id);
+    const { error } = await supabaseClient.from("receita").update({ nome: novoNome }).eq("id", id);
     if (error) console.error("Erro ao editar receita:", error);
     carregar();
 }
@@ -81,7 +81,7 @@ async function editarIngrediente(id, nomeAtual, quantidadeAtual) {
     const novaQuantidade = prompt("Nova quantidade:", quantidadeAtual);
     if (!novoNome || !novaQuantidade) return;
 
-    const { error } = await supabaseClient.from("ingredientes").update({ nome: novoNome, quantidade: novaQuantidade }).eq("id", id);
+    const { error } = await supabaseClient.from("ingrediente").update({ nome: novoNome, quantidade: novaQuantidade }).eq("id", id);
     if (error) console.error("Erro ao editar ingrediente:", error);
     carregar();
 }
