@@ -1,29 +1,157 @@
 <!DOCTYPE html>
 <html lang="pt-BR">
 <head>
-  <meta charset="UTF-8">
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
   <title>Nova Receita</title>
-  <link rel="stylesheet" href="style.css">
+  <link rel="stylesheet" href="css/style.css" />
 </head>
 <body>
-  <h1 id="form-title">Nova Receita</h1>
+  <header class="topbar">
+    <h1 id="formTitle">Nova Receita</h1>
+    <nav class="nav">
+      <a href="index.html">Listar</a>
+      <a href="nova.html" class="active">Nova Receita</a>
+    </nav>
+  </header>
 
-  <form id="nova-receita-form">
-    <label for="nome">Nome da Receita:</label>
-    <input type="text" id="nome" name="nome" required>
+  <main class="container">
+    <form id="formReceita" class="card form">
+      <div class="grid-2">
+        <label>
+          <span>Nome*</span>
+          <input name="nome" required maxlength="200" />
+        </label>
+        <label>
+          <span>Categoria</span>
+          <input name="categoria" placeholder="Sobremesa, Massa, Bebida…" />
+        </label>
+      </div>
 
-    <label for="descricao">Descrição:</label>
-    <textarea id="descricao" name="descricao"></textarea>
+      <div class="grid-2">
+        <label>
+          <span>Tempo de preparo (min)</span>
+          <input name="tempo_preparo" type="number" min="0" step="1" />
+        </label>
+        <label>
+          <span>Rendimento</span>
+          <input name="rendimento" placeholder="8 fatias, 4 porções…" />
+        </label>
+      </div>
 
-    <div id="ingredientes-container">
-      <h3>Ingredientes</h3>
-      <div id="ingredientes-list"></div>
-      <button type="button" id="add-ingrediente">+ Ingrediente</button>
+      <label>
+        <span>Modo de preparo*</span>
+        <textarea name="modo_preparo" required rows="6"
+          placeholder="Descreva o passo a passo…"></textarea>
+      </label>
+
+      <section class="subcard">
+        <div class="subcard-header">
+          <h3>Ingredientes</h3>
+          <button type="button" id="btnAddIng" class="btn btn-ghost">+ Adicionar ingrediente</button>
+        </div>
+        <div id="ingredientes"></div>
+      </section>
+
+      <div class="form-actions">
+        <button class="btn" type="submit" id="btnSalvar">Salvar</button>
+        <a class="btn btn-ghost" href="index.html">Cancelar</a>
+      </div>
+    </form>
+  </main>
+
+  <template id="tpl-ing">
+    <div class="ing-row">
+      <input class="ing-nome" placeholder="Ingrediente (ex: Farinha de trigo)" required />
+      <input class="ing-qtde" placeholder="Quantidade (ex: 2 xícaras)" />
+      <button type="button" class="btn btn-danger btn-small btn-rem">Remover</button>
     </div>
+  </template>
 
-    <button type="submit" id="salvar-receita">Criar Receita</button>
-  </form>
+  <script src="js/app.js"></script>
+  <script>
+    const ingContainer = document.getElementById('ingredientes');
+    const tplIng = document.getElementById('tpl-ing');
+    const url = new URL(window.location.href);
+    const receitaId = url.searchParams.get('id');
 
-  <script src="app.js"></script>
+    function addIng(nome = '', qtde = '') {
+      const node = tplIng.content.cloneNode(true);
+      node.querySelector('.ing-nome').value = nome;
+      node.querySelector('.ing-qtde').value = qtde;
+      node.querySelector('.btn-rem').addEventListener('click', (e) => {
+        e.target.closest('.ing-row').remove();
+      });
+      ingContainer.appendChild(node);
+    }
+
+    document.getElementById('btnAddIng').addEventListener('click', () => addIng());
+
+    // Comece com 3 linhas de ingrediente caso seja nova receita
+    if (!receitaId) {
+      addIng(); addIng(); addIng();
+    }
+
+    async function carregarReceita() {
+      if (!receitaId) return;
+      const r = await api.obterReceita(receitaId);
+      if (!r) return;
+
+      document.getElementById('formTitle').textContent = 'Editar Receita';
+
+      const form = document.getElementById('formReceita');
+      form.nome.value = r.nome;
+      form.categoria.value = r.categoria || '';
+      form.tempo_preparo.value = r.tempo_preparo || '';
+      form.rendimento.value = r.rendimento || '';
+      form.modo_preparo.value = r.modo_preparo || '';
+
+      const ingredientes = await api.listarIngredientes(receitaId);
+      ingContainer.innerHTML = '';
+      ingredientes.forEach(i => addIng(i.nome, i.qtde || ''));
+    }
+
+    document.getElementById('formReceita').addEventListener('submit', async (e) => {
+      e.preventDefault();
+      const form = e.target;
+      const data = {
+        nome: form.nome.value.trim(),
+        categoria: form.categoria.value.trim() || null,
+        modo_preparo: form.modo_preparo.value.trim(),
+        tempo_preparo: form.tempo_preparo.value ? parseInt(form.tempo_preparo.value, 10) : null,
+        rendimento: form.rendimento.value.trim() || null,
+      };
+
+      if (!data.nome || !data.modo_preparo) {
+        alert('Preencha os campos obrigatórios.');
+        return;
+      }
+
+      const linhas = Array.from(document.querySelectorAll('.ing-row'));
+      const ingredientes = linhas
+        .map(l => ({
+          nome: l.querySelector('.ing-nome').value.trim(),
+          qtde: l.querySelector('.ing-qtde').value.trim() || null
+        }))
+        .filter(x => x.nome);
+
+      try {
+        let receitaCompleta;
+        if (receitaId) {
+          await api.atualizarReceitaCompleta(receitaId, data, ingredientes);
+          alert('Receita atualizada com sucesso!');
+          receitaCompleta = await api.obterReceita(receitaId);
+        } else {
+          receitaCompleta = await api.criarReceitaCompleta(data, ingredientes);
+        }
+        window.location.href = 'receita.html?id=' + encodeURIComponent(receitaCompleta.id);
+      } catch (err) {
+        console.error(err);
+        alert('Não foi possível salvar a receita.');
+      }
+    });
+
+    carregarReceita();
+  </script>
 </body>
 </html>
