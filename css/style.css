@@ -113,23 +113,33 @@ body {
   justify-content: space-between;
   margin-bottom: .5rem;
 }
+
+/* Linha de Ingrediente: Nome | Quantidade | Remover (sempre lado a lado) */
 .ing-row {
-  display: flex;
-  gap: 4px; /* espaçamento menor para caber no mobile */
+  display: grid;
+  grid-template-columns: 2fr 1fr auto; /* Nome, Quantidade, Botão */
+  gap: 6px;
   margin-bottom: 8px;
-  flex-wrap: wrap; /* permite quebrar linha se necessário */
   align-items: center;
 }
-.ing-row input.ing-nome {
-  flex: 2 1 60%; /* cresce, encolhe, base 60% */
-  min-width: 0;
-}
+
+.ing-row input.ing-nome,
 .ing-row input.ing-qtde {
-  flex: 1 1 30%; /* cresce, encolhe, base 30% */
-  min-width: 0;
+  width: 100%;
+  min-width: 0;           /* permite encolher sem quebrar linha */
+  padding: 6px;           /* menor para caber no retrato */
+  font-size: 14px;        /* levemente menor no retrato */
+  border-radius: 10px;
+  border: 1px solid var(--border);
+  background: #0f121a;
+  color: var(--text);
 }
+
 .ing-row button.btn-rem {
-  flex: 0 0 auto; /* botão mantém tamanho natural */
+  justify-self: end;       /* mantém o botão à direita */
+  white-space: nowrap;     /* evita quebra do texto */
+  padding: 6px 10px;
+  font-size: 14px;
 }
 
 /* Detalhe */
@@ -153,7 +163,7 @@ body {
   color: #eaf0ff;
   cursor: pointer;
 }
-.btn:hover { filter: brightness(1.05); }
+.btn:hover { filter: brightness(1.05)); }
 .btn:active { transform: translateY(1px); }
 .btn-small { padding: .35rem .6rem; font-size: .9rem; }
 .btn-ghost { background: transparent; color: var(--text); }
@@ -163,15 +173,23 @@ body {
 .muted { color: var(--muted); }
 .form-inline { display: grid; gap: .5rem; grid-template-columns: 2fr 1fr auto; margin-top: .5rem; }
 
-/* Ajuste para mobile */
+/* Ajuste para mobile (mantém Nome|Qtde|Botão lado a lado) */
 @media (max-width: 520px) {
   .form-inline { grid-template-columns: 1fr; }
 
-  /* Ingredientes empilhados se não couber horizontalmente */
+  /* Mantemos 3 colunas para ingredientes no retrato,
+     apenas deixando inputs e botão mais compactos */
   .ing-row {
-    flex-direction: column;
+    grid-template-columns: 2fr 1fr auto;
+    gap: 4px;
   }
-  .ing-row input {
-    flex: 1;
+  .ing-row input.ing-nome,
+  .ing-row input.ing-qtde {
+    padding: 6px;
+    font-size: 14px;
+  }
+  .ing-row button.btn-rem {
+    padding: 6px 8px;
+    font-size: 13px;
   }
 }
