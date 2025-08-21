@@ -52,11 +52,15 @@ const api = {
   },
 
   async criarReceita(data) {
-    return sFetch(`${SUPABASE_URL}/rest/v1/receita`, {
-      method: 'POST',
-      body: JSON.stringify(data)
-    });
-  },
+  return sFetch(`${SUPABASE_URL}/rest/v1/receita`, {
+    method: 'POST',
+    headers: {
+      ...headers,
+      Prefer: "return=representation"
+    },
+    body: JSON.stringify(data)
+  });
+}
 
   async atualizarReceita(id, data) {
     return sFetch(`${SUPABASE_URL}/rest/v1/receita?id=eq.${id}`, {
