@@ -15,6 +15,11 @@ async function sFetch(url, options = {}) {
     const msg = await res.text();
     throw new Error(`Erro Supabase: ${res.status} ${msg}`);
   }
+
+  if (res.status === 204) {
+    return null; // DELETE não tem corpo
+  }
+
   return res.json();
 }
 
