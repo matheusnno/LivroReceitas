@@ -96,19 +96,21 @@
       if (!receitaId) return;
       const r = await api.obterReceita(receitaId);
       if (!r) return;
-
+      
       document.getElementById('formTitle').textContent = 'Editar Receita';
-
+      if (r.length > 0){
+        const rec = r[0];
       const form = document.getElementById('formReceita');
-      form.nome.value = r.nome;
-      form.categoria.value = r.categoria || '';
-      form.tempo_preparo.value = r.tempo_preparo || '';
-      form.rendimento.value = r.rendimento || '';
-      form.modo_preparo.value = r.modo_preparo || '';
+      form.nome.value = rec.nome;
+      form.categoria.value = rec.categoria || '';
+      form.tempo_preparo.value = rec.tempo_preparo || '';
+      form.rendimento.value = rec.rendimento || '';
+      form.modo_preparo.value = rec.modo_preparo || '';
 
       const ingredientes = await api.listarIngredientes(receitaId);
       ingContainer.innerHTML = '';
       ingredientes.forEach(i => addIng(i.nome, i.qtde || ''));
+      }
     }
 
     document.getElementById('formReceita').addEventListener('submit', async (e) => {
@@ -155,5 +157,6 @@
   </script>
 </body>
 </html>
+
 
 
