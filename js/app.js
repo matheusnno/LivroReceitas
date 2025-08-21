@@ -95,7 +95,7 @@ const api = {
   },
 
   // ==========================
-  // COMPOSTOS (RECEITA + INGREDIENTES)
+  // COMPOSTOS (RECEITA + INGREDIENTES) 
   // ==========================
   async criarReceitaCompleta(data, ingredientes) {
     try {
