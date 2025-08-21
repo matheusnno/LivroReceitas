@@ -54,7 +54,8 @@ const api = {
 
   async deletarReceita(id) {
     return sFetch(`${SUPABASE_URL}/rest/v1/receita?id=eq.${id}`, {
-      method: "DELETE"
+      method: "DELETE",
+      headers
     });
   },
 
