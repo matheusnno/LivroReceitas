@@ -37,7 +37,7 @@ const api = {
   }
 
   return sFetch(url, { headers });
-}
+},
 
   async obterReceita(id) {
     return sFetch(`${SUPABASE_URL}/rest/v1/receita?id=eq.${id}&select=*,ingrediente(*)`, { headers });
