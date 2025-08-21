@@ -27,9 +27,17 @@ const api = {
   // ==========================
   // RECEITAS
   // ==========================
-  async listarReceitas() {
-    return sFetch(`${SUPABASE_URL}/rest/v1/receita?select=*`, { headers });
-  },
+  async listarReceitas(termo = '') {
+  let url = `${SUPABASE_URL}/rest/v1/receita?select=*`;
+
+  if (termo) {
+    // Aqui usamos filtro `ilike` do Supabase para busca "case-insensitive" por nome
+    const query = encodeURIComponent(`nome.ilike.%${termo}%`);
+    url += `&${query}`;
+  }
+
+  return sFetch(url, { headers });
+}
 
   async obterReceita(id) {
     return sFetch(`${SUPABASE_URL}/rest/v1/receita?id=eq.${id}&select=*,ingrediente(*)`, { headers });
