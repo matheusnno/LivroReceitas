@@ -84,15 +84,16 @@ const api = {
   },
 
   async atualizarIngredientes(receitaId, itens) {
-    // Estratégia simples: apaga todos e recria
-    await sFetch(`${SUPABASE_URL}/rest/v1/ingrediente?receita_id=eq.${receitaId}`, {
-      method: "DELETE"
-    });
-    if (itens.length > 0) {
-      return this.criarIngredientes(receitaId, itens);
-    }
-    return [];
-  },
+  // Estratégia simples: apaga todos e recria
+  await sFetch(`${SUPABASE_URL}/rest/v1/ingrediente?receita_id=eq.${receitaId}`, {
+    method: "DELETE",
+    headers
+  });
+  if (itens.length > 0) {
+    return this.criarIngredientes(receitaId, itens);
+  }
+  return [];
+},
 
   // ==========================
   // COMPOSTOS (RECEITA + INGREDIENTES) 
