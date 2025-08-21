@@ -62,8 +62,10 @@ const api = {
   // ==========================
   // INGREDIENTES
   // ==========================
-  async listarIngredietes(receitaId) {
-    return sFetch(`${SUPABASE_URL}/rest/v1/ingrediente?receita_id=eq.${receitaId}`, { headers });
+  async listarIngredientes(receitaId) {
+    return sFetch(`${SUPABASE_URL}/rest/v1/ingrediente?receita_id=eq.${receitaId}&select=*`, {
+      headers
+    });
   },
   async criarIngredientes(receitaId, itens) {
     const dados = itens.map(x => ({
