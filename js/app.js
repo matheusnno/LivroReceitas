@@ -3,199 +3,125 @@
 const SUPABASE_URL = "https://flalhcrfneubfhyzqbxe.supabase.co";
 const SUPABASE_KEY = "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImZsYWxoY3JmbmV1YmZoeXpxYnhlIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NTU2MjU2NTEsImV4cCI6MjA3MTIwMTY1MX0.LwYrDgtofJaDfvofHcUeZYnUh0SBk_UxXh2HQgiCwFI";
 
-// Cabeçalhos padrão para REST
 const headers = {
   "apikey": SUPABASE_KEY,
-  "Authorization": "Bearer " + SUPABASE_KEY,
+  "Authorization": `Bearer ${SUPABASE_KEY}`,
   "Content-Type": "application/json"
 };
 
-// Função utilitária para fetch com tratamento de erro
 async function sFetch(url, options = {}) {
-  const resp = await fetch(url, { headers, ...options });
-  if (!resp.ok) {
-    const txt = await resp.text().catch(() => '');
-    console.error('Erro REST', resp.status, txt);
-    throw new Error('Falha na chamada REST: ' + resp.status);
+  const res = await fetch(url, options);
+  if (!res.ok) {
+    const msg = await res.text();
+    throw new Error(`Erro Supabase: ${res.status} ${msg}`);
   }
-  const contentType = resp.headers.get('content-type') || '';
-  if (contentType.includes('application/json')) return resp.json();
-  return resp.text();
+  return res.json();
 }
 
-// API pública da aplicação
 const api = {
-  // Receitas
-  async listarReceitas(termo = '') {
-    if (!termo) {
-      return sFetch(`${SUPABASE_URL}/rest/v1/receita?select=*&order=criado_em.desc`);
-    } else {
-      const nomeQuery = `${SUPABASE_URL}/rest/v1/receita?select=*&nome=ilike.*${encodeURIComponent(termo)}*&order=criado_em.desc`;
-      const receitasPorNome = await sFetch(nomeQuery);
-
-      const ingQuery = `${SUPABASE_URL}/rest/v1/ingrediente?select=receita_id&nome=ilike.*${encodeURIComponent(termo)}*`;
-      const ing = await sFetch(ingQuery);
-      const idsIng = [...new Set(ing.map(i => i.receita_id))];
-      const byIds = idsIng.length
-        ? await sFetch(`${SUPABASE_URL}/rest/v1/receita?select=*&id=in.(${idsIng.join(',')})`)
-        : [];
-
-      const map = new Map();
-      [...receitasPorNome, ...byIds].forEach(r => map.set(r.id, r));
-      return Array.from(map.values()).sort((a,b) => (new Date(b.criado_em||0)) - (new Date(a.criado_em||0)));
-    }
+  // ==========================
+  // RECEITAS
+  // ==========================
+  async listarReceitas() {
+    return sFetch(`${SUPABASE_URL}/rest/v1/receita?select=*`, { headers });
   },
 
   async obterReceita(id) {
-    const res = await sFetch(`${SUPABASE_URL}/rest/v1/receita?select=*&id=eq.${id}`);
-    return res[0] || null;
+    return sFetch(`${SUPABASE_URL}/rest/v1/receita?id=eq.${id}&select=*,ingrediente(*)`, { headers });
   },
 
   async criarReceita(data) {
-  return sFetch(`${SUPABASE_URL}/rest/v1/receita`, {
-    method: 'POST',
-    headers: {
-      ...headers,
-      Prefer: "return=representation"
-    },
-    body: JSON.stringify(data)
-  });
-}
+    return sFetch(`${SUPABASE_URL}/rest/v1/receita`, {
+      method: "POST",
+      headers: {
+        ...headers,
+        Prefer: "return=representation"
+      },
+      body: JSON.stringify(data)
+    });
+  },
 
   async atualizarReceita(id, data) {
     return sFetch(`${SUPABASE_URL}/rest/v1/receita?id=eq.${id}`, {
-      method: 'PATCH',
+      method: "PATCH",
+      headers: {
+        ...headers,
+        Prefer: "return=representation"
+      },
       body: JSON.stringify(data)
     });
   },
 
   async deletarReceita(id) {
     return sFetch(`${SUPABASE_URL}/rest/v1/receita?id=eq.${id}`, {
-      method: 'DELETE'
+      method: "DELETE",
+      headers
     });
   },
 
-  // Ingredientes
-  async listarIngredientes(receitaId) {
-    return sFetch(`${SUPABASE_URL}/rest/v1/ingrediente?select=*&receita_id=eq.${receitaId}&order=id.asc`);
-  },
-
+  // ==========================
+  // INGREDIENTES
+  // ==========================
   async criarIngredientes(receitaId, itens) {
-    const dados = itens.map(x => ({ receita_id: receitaId, nome: x.nome, qtde: x.qtde || null }));
+    const dados = itens.map(x => ({
+      receita_id: receitaId,
+      nome: x.nome,
+      qtde: x.qtde || null
+    }));
     return sFetch(`${SUPABASE_URL}/rest/v1/ingrediente`, {
-      method: 'POST',
+      method: "POST",
+      headers: {
+        ...headers,
+        Prefer: "return=representation"
+      },
       body: JSON.stringify(dados)
     });
   },
 
-  async atualizarIngrediente(id, data) {
-    return sFetch(`${SUPABASE_URL}/rest/v1/ingrediente?id=eq.${id}`, {
-      method: 'PATCH',
-      body: JSON.stringify(data)
+  async atualizarIngredientes(receitaId, itens) {
+    // Estratégia simples: apaga todos e recria
+    await sFetch(`${SUPABASE_URL}/rest/v1/ingrediente?receita_id=eq.${receitaId}`, {
+      method: "DELETE",
+      headers
     });
+    if (itens.length > 0) {
+      return this.criarIngredientes(receitaId, itens);
+    }
+    return [];
   },
 
-  async deletarIngrediente(id) {
-    return sFetch(`${SUPABASE_URL}/rest/v1/ingrediente?id=eq.${id}`, {
-      method: 'DELETE'
-    });
-  },
-
-  // Cria receita + ingredientes juntos
-  async criarReceitaCompleta(receita, ingredientes) {
+  // ==========================
+  // COMPOSTOS (RECEITA + INGREDIENTES)
+  // ==========================
+  async criarReceitaCompleta(data, ingredientes) {
     try {
-      const novaReceita = await api.criarReceita(receita);
-      if (!novaReceita || !novaReceita[0] || !novaReceita[0].id) {
-        console.error("Resposta inválida do Supabase:", novaReceita);
-        throw new Error("Não foi possível criar a receita");
+      const novaReceita = await this.criarReceita(data);
+      if (!novaReceita || !novaReceita[0]?.id) {
+        throw new Error("Resposta inválida do Supabase ao criar receita.");
       }
       const receitaId = novaReceita[0].id;
-
-      if (ingredientes && ingredientes.length > 0) {
-        await api.criarIngredientes(receitaId, ingredientes);
+      let novosIngredientes = [];
+      if (ingredientes?.length) {
+        novosIngredientes = await this.criarIngredientes(receitaId, ingredientes);
       }
-
-      const receitaCompleta = await api.obterReceita(receitaId);
-      receitaCompleta.ingredientes = ingredientes.length ? await api.listarIngredientes(receitaId) : [];
-
-      return receitaCompleta;
+      return { ...novaReceita[0], ingredientes: novosIngredientes };
     } catch (err) {
-      console.error("Erro ao criar receita completa:", err);
-      throw err;
+      console.error("Erro criarReceitaCompleta:", err);
+      throw new Error("Não foi possível criar a receita.");
     }
   },
 
-  // Atualiza receita + ingredientes
-  async atualizarReceitaCompleta(receitaId, receitaData, ingredientesNovos) {
+  async atualizarReceitaCompleta(receitaId, data, ingredientes) {
     try {
-      // Atualizar receita
-      await api.atualizarReceita(receitaId, receitaData);
-
-      // Atualizar ou criar ingredientes
-      const existentes = await api.listarIngredientes(receitaId);
-
-      // Mapear nomes para id existentes
-      const mapExist = new Map(existentes.map(i => [i.nome, i]));
-
-      for (let ing of ingredientesNovos) {
-        if (mapExist.has(ing.nome)) {
-          const existente = mapExist.get(ing.nome);
-          await api.atualizarIngrediente(existente.id, { qtde: ing.qtde || null });
-          mapExist.delete(ing.nome);
-        } else {
-          await api.criarIngredientes(receitaId, [ing]);
-        }
+      const receitaAtualizada = await this.atualizarReceita(receitaId, data);
+      let novosIngredientes = [];
+      if (ingredientes) {
+        novosIngredientes = await this.atualizarIngredientes(receitaId, ingredientes);
       }
-
-      // Deletar ingredientes que sobraram
-      for (let ing of mapExist.values()) {
-        await api.deletarIngrediente(ing.id);
-      }
-
-      return await api.obterReceita(receitaId);
+      return { ...receitaAtualizada[0], ingredientes: novosIngredientes };
     } catch (err) {
-      console.error("Erro ao atualizar receita completa:", err);
-      throw err;
+      console.error("Erro atualizarReceitaCompleta:", err);
+      throw new Error("Não foi possível atualizar a receita.");
     }
   }
 };
-// Atualiza receita + ingredientes existentes
-async function atualizarReceitaCompleta(id, receitaAtualizada, ingredientes) {
-  try {
-    // Atualizar dados da receita
-    await sFetch(`${SUPABASE_URL}/rest/v1/receita?id=eq.${id}`, {
-      method: 'PATCH',
-      body: JSON.stringify(receitaAtualizada)
-    });
-
-    // Apagar ingredientes antigos
-    await sFetch(`${SUPABASE_URL}/rest/v1/ingrediente?receita_id=eq.${id}`, {
-      method: 'DELETE'
-    });
-
-    // Inserir novos ingredientes
-    if (ingredientes && ingredientes.length > 0) {
-      const dados = ingredientes.map(x => ({
-        receita_id: id,
-        nome: x.nome,
-        qtde: x.qtde || null
-      }));
-      await sFetch(`${SUPABASE_URL}/rest/v1/ingrediente`, {
-        method: 'POST',
-        body: JSON.stringify(dados)
-      });
-    }
-
-    // Retornar receita atualizada com ingredientes
-    const receitaCompleta = await api.obterReceita(id);
-    receitaCompleta.ingredientes = await api.listarIngredientes(id);
-    return receitaCompleta;
-
-  } catch (err) {
-    console.error("Erro ao atualizar receita completa:", err);
-    throw err;
-  }
-}
-
-// Adicione dentro do objeto api:
-api.atualizarReceitaCompleta = atualizarReceitaCompleta;
