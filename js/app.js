@@ -32,7 +32,7 @@ const api = {
 
   if (termo) {
     // Aqui usamos filtro `ilike` do Supabase para busca "case-insensitive" por nome
-    const query = encodeURIComponent(`nome.ilike.%${termo}%`);
+    const query = `&nome=ilike.*${encodeURIComponent(termo)}*&order=criado_em.desc`;
     url += `&${query}`;
   }
 
