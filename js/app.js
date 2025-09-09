@@ -28,7 +28,7 @@ const api = {
   // RECEITAS
   // ==========================
   async listarReceitas(termo = '') {
-  let url = `${SUPABASE_URL}/rest/v1/receita?select=*`;
+  let url = `${SUPABASE_URL}/rest/v1/receita?select=*&order=nome.desc`;
 
   if (termo) {
     // Aqui usamos filtro `ilike` do Supabase para busca "case-insensitive" por nome
