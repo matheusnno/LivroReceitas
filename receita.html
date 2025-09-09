@@ -1,67 +1,73 @@
 <!DOCTYPE html>
 <html lang="pt-BR">
 <head>
-  <meta charset="UTF-8" />
-  <meta name="viewport" content="width=device-width, initial-scale=1" />
-  <title>Detalhes da Receita</title>
-  <link rel="stylesheet" href="css/style.css" />
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Visualizar Receita</title>
+  <link rel="stylesheet" href="css/style.css">
 </head>
 <body>
-  <header class="topbar">
-    <h1>Detalhes da Receita</h1>
-    <nav class="nav">
-      <a href="index.html">Listar</a>
-      <a href="nova.html">Nova Receita</a>
-    </nav>
+  <header>
+    <h1 id="tituloReceita">Receita</h1>
+    <a class="btn" href="index.html">← Voltar</a>
+    <a class="btn" id="editarBtn">Editar</a>
   </header>
 
-  <main class="container">
-    <section class="card recipe-detail">
-      <div class="card-header">
-        <h2 id="nomeReceita">Carregando...</h2>
-        <div class="actions">
-          <a id="btnEditar" class="btn">Editar Receita</a>
-        </div>
-      </div>
-      <div class="stack">
-        <div><strong>Categoria:</strong> <span id="categoria"></span></div>
-        <div><strong>Tempo de preparo:</strong> <span id="tempo_preparo"></span></div>
-        <div><strong>Rendimento:</strong> <span id="rendimento"></span></div>
-      </div>
-      <h3>Ingredientes</h3>
-      <ul id="listaIngredientes" class="list"></ul>
-      <h3>Modo de preparo</h3>
-      <p id="modo_preparo"></p>
+  <main>
+    <section class="card">
+      <p><strong>Categoria:</strong> <span id="categoria"></span></p>
+      <p><strong>Tempo de Preparo:</strong> <span id="tempo"></span></p>
+      <p><strong>Rendimento:</strong> <span id="rendimento"></span></p>
+    </section>
+
+    <section class="card">
+      <h2>Ingredientes</h2>
+      <ul id="listaIngredientes"></ul>
+    </section>
+
+    <section class="card">
+      <h2>Modo de Preparo</h2>
+      <p id="modoPreparo"></p>
     </section>
   </main>
 
   <script src="js/app.js"></script>
   <script>
-    const url = new URL(window.location.href);
-    const receitaId = url.searchParams.get('id');
+    const params = new URLSearchParams(window.location.search);
+    const receitaId = params.get("id");
 
     async function carregarReceita() {
-      if (!receitaId) {
-        alert('Nenhuma receita selecionada.');
-        window.location.href = 'index.html';
-        return;
+      try {
+        const r = await api.obterReceita(receitaId);
+        if (!r || !r[0]) {
+          alert("Receita não encontrada.");
+          return;
+        }
+
+        const receita = r[0];
+        document.getElementById("tituloReceita").textContent = receita.nome;
+        document.getElementById("categoria").textContent = receita.categoria || "-";
+        document.getElementById("tempo").textContent = receita.tempo_preparo || "-";
+        document.getElementById("rendimento").textContent = receita.rendimento || "-";
+        document.getElementById("modoPreparo").textContent = receita.modo_preparo || "";
+
+        const ul = document.getElementById("listaIngredientes");
+        ul.innerHTML = "";
+        (receita.ingrediente || []).forEach(i => {
+          const li = document.createElement("li");
+          li.textContent = `${i.qtde || ""} ${i.nome}`;
+          ul.appendChild(li);
+        });
+
+        // Botão editar
+        document.getElementById("editarBtn").href = `nova.html?id=${receitaId}`;
+      } catch (err) {
+        console.error("Erro carregar receita:", err);
+        alert("Erro ao carregar receita.");
       }
+    }
 
-      const r = await api.obterReceita(receitaId);
-      if (!r || !r.length) {
-        alert('Receita não encontrada.');
-        window.location.href = 'index.html';
-        return;
-      }
-
-      const receita = r[0];
-      document.getElementById('nomeReceita').textContent = receita.nome;
-      document.getElementById('categoria').textContent = receita.categoria || '—';
-      document.getElementById('tempo_preparo').textContent = receita.tempo_preparo ? receita.tempo_preparo + ' min' : '—';
-      document.getElementById('rendimento').textContent = receita.rendimento || '—';
-      document.getElementById('modo_preparo').textContent = receita.modo_preparo;
-
-      const listaIng = document.getElementById('listaIngredientes');
-      listaIng.innerHTML = '';
-      (receita.ingrediente || []).forEach(i => {
-        const li = document
+    carregarReceita();
+  </script>
+</body>
+</html>
