@@ -28,11 +28,11 @@ const api = {
   // RECEITAS
   // ==========================
   async listarReceitas(termo = '') {
-  let url = `${SUPABASE_URL}/rest/v1/receita?select=*&order=nome.asc`;
+  let url = `${SUPABASE_URL}/rest/v1/receita?select=*&order=categoria.asc,nome.asc`;
 
   if (termo) {
     // Aqui usamos filtro `ilike` do Supabase para busca "case-insensitive" por nome
-    const query = `&nome=ilike.*${encodeURIComponent(termo)}*&order=nome.asc`;
+    const query = `&nome=ilike.*${encodeURIComponent(termo)}*&order=categoria.asc,nome.asc`;
     url += `&${query}`;
   }
 
