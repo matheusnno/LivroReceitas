@@ -7,85 +7,61 @@
   <link rel="stylesheet" href="css/style.css" />
 </head>
 <body>
-  <header class="topbar">
+  <header>
     <h1>Minhas Receitas</h1>
-    <nav class="nav">
-      <a href="index.html" class="active">Listar</a>
-      <a href="nova.html">Nova Receita</a>
-    </nav>
+    <a class="btn" href="nova.html">Nova Receita</a>
   </header>
 
-  <main class="container">
-    <section class="card">
-      <div class="card-header">
-        <h2>Receitas</h2>
-        <div class="actions">
-          <input id="busca" type="search" placeholder="Buscar por nome..." />
-          <button id="btnBuscar" class="btn">Buscar</button>
-        </div>
-      </div>
-      <div id="lista" class="grid"></div>
-    </section>
+  <main>
+    <div id="listaReceitas" class="grid"></div>
   </main>
-
-  <template id="tpl-receita-card">
-    <article class="recipe-card">
-      <div class="recipe-card-body">
-        <h3 class="recipe-title"></h3>
-        <p class="recipe-meta"></p>
-      </div>
-      <div class="recipe-card-actions">
-        <a class="btn btn-ghost btn-small ver-receita" href="#">Abrir</a>
-        <button class="btn btn-danger btn-small deletar-receita">Excluir</button>
-      </div>
-    </article>
-  </template>
 
   <script src="js/app.js"></script>
   <script>
-    async function carregar() {
-      const termo = (document.getElementById('busca').value || '').trim();
-      const receitas = await api.listarReceitas(termo);
-      const lista = document.getElementById('lista');
-      lista.innerHTML = '';
-      const tpl = document.getElementById('tpl-receita-card');
+    async function carregarReceitas() {
+      try {
+        const receitas = await api.listarReceitas();
+        const container = document.getElementById('listaReceitas');
+        container.innerHTML = '';
 
-      if (!receitas.length) {
-        lista.innerHTML = '<p class="muted">Nenhuma receita encontrada.</p>';
-        return;
-      }
+        if (!receitas.length) {
+          container.innerHTML = '<p>Nenhuma receita cadastrada.</p>';
+          return;
+        }
 
-      receitas.forEach(r => {
-        const node = tpl.content.cloneNode(true);
-        node.querySelector('.recipe-title').textContent = r.nome;
-        const meta = [];
-        if (r.categoria) meta.push(r.categoria);
-        if (r.tempo_preparo) meta.push(r.tempo_preparo + ' min');
-        if (r.rendimento) meta.push(r.rendimento);
-        node.querySelector('.recipe-meta').textContent = meta.join(' • ');
-
-        // Abrir em nova.html para edição
-        const link = node.querySelector('.ver-receita');
-        link.href = 'nova.html?id=' + encodeURIComponent(r.id);
-
-        const btnDel = node.querySelector('.deletar-receita');
-        btnDel.addEventListener('click', async () => {
-          if (confirm('Tem certeza que deseja excluir esta receita?')) {
-            await api.deletarReceita(r.id);
-            await carregar();
-          }
+        receitas.forEach(r => {
+          const card = document.createElement('div');
+          card.className = 'card';
+          card.innerHTML = `
+            <h2>${r.nome}</h2>
+            <p><strong>Categoria:</strong> ${r.categoria || '-'}</p>
+            <p><strong>Tempo de Preparo:</strong> ${r.tempo_preparo || '-'} min</p>
+            <div class="actions">
+              <a class="btn" href="receita.html?id=${r.id}">Abrir</a>
+              <a class="btn" href="nova.html?id=${r.id}">Editar</a>
+              <button class="btn btn-danger" onclick="deletarReceita(${r.id})">Excluir</button>
+            </div>
+          `;
+          container.appendChild(card);
         });
-
-        lista.appendChild(node);
-      });
+      } catch (err) {
+        console.error("Erro ao carregar receitas:", err);
+        alert("Erro ao carregar receitas.");
+      }
     }
 
-    document.getElementById('btnBuscar').addEventListener('click', carregar);
-    document.getElementById('busca').addEventListener('keydown', (e) => {
-      if (e.key === 'Enter') carregar();
-    });
+    async function deletarReceita(id) {
+      if (!confirm("Tem certeza que deseja excluir esta receita?")) return;
+      try {
+        await api.deletarReceita(id);
+        carregarReceitas();
+      } catch (err) {
+        console.error("Erro ao deletar receita:", err);
+        alert("Erro ao deletar receita.");
+      }
+    }
 
-    carregar();
+    carregarReceitas();
   </script>
 </body>
 </html>
