@@ -1,120 +1,67 @@
-<!--<section class="card">
-  <div class="card-header">
-    <h2>Informações</h2>
-  </div>
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <title>Detalhes da Receita</title>
+  <link rel="stylesheet" href="css/style.css" />
+</head>
+<body>
+  <header class="topbar">
+    <h1>Detalhes da Receita</h1>
+    <nav class="nav">
+      <a href="index.html">Listar</a>
+      <a href="nova.html">Nova Receita</a>
+    </nav>
+  </header>
 
-  <form id="formEditReceita" class="form">
-    <div class="grid-2">
-      <label>
-        <span>Nome*</span>
-        <input name="nome" required maxlength="200" />
-      </label>
-      <label>
-        <span>Categoria</span>
-        <input name="categoria" placeholder="Sobremesa, Massa, Bebida…" />
-      </label>
-    </div>
-
-    <div class="grid-2">
-      <label>
-        <span>Tempo de preparo (min)</span>
-        <input name="tempo_preparo" type="number" min="0" step="1" />
-      </label>
-      <label>
-        <span>Rendimento</span>
-        <input name="rendimento" placeholder="8 fatias, 4 porções…" />
-      </label>
-    </div>
-
-    <label>
-      <span>Modo de preparo*</span>
-      <textarea name="modo_preparo" rows="6" required></textarea>
-    </label>-->
-
-    <!-- Ingredientes -->
-    <!-- <div class="subcard">
-      <div class="subcard-header">
-        <h3>Ingredientes</h3>
+  <main class="container">
+    <section class="card recipe-detail">
+      <div class="card-header">
+        <h2 id="nomeReceita">Carregando...</h2>
+        <div class="actions">
+          <a id="btnEditar" class="btn">Editar Receita</a>
+        </div>
       </div>
-      <ul id="listaIng" class="list">
-        <li class="muted">Carregando ingredientes…</li>
-      </ul>
-    </div>
+      <div class="stack">
+        <div><strong>Categoria:</strong> <span id="categoria"></span></div>
+        <div><strong>Tempo de preparo:</strong> <span id="tempo_preparo"></span></div>
+        <div><strong>Rendimento:</strong> <span id="rendimento"></span></div>
+      </div>
+      <h3>Ingredientes</h3>
+      <ul id="listaIngredientes" class="list"></ul>
+      <h3>Modo de preparo</h3>
+      <p id="modo_preparo"></p>
+    </section>
+  </main>
 
-    <div class="form-actions">
-      <button class="btn" type="submit">Salvar alterações</button>
-      <a href="index.html" class="btn btn-ghost">Cancelar</a>
-    </div>
-  </form>
-</section>
-<script src="js/app.js"></script> 
-<script>
-async function carregar() {
-  const r = await api.obterReceita(id);
-  if (!r) return;
+  <script src="js/app.js"></script>
+  <script>
+    const url = new URL(window.location.href);
+    const receitaId = url.searchParams.get('id');
 
-  document.getElementById('titulo').textContent = r.nome;
-  const form = document.getElementById('formEditReceita');
-  form.nome.value = r.nome;
-  form.categoria.value = r.categoria || '';
-  form.tempo_preparo.value = r.tempo_preparo || '';
-  form.rendimento.value = r.rendimento || '';
-  form.modo_preparo.value = r.modo_preparo || '';
+    async function carregarReceita() {
+      if (!receitaId) {
+        alert('Nenhuma receita selecionada.');
+        window.location.href = 'index.html';
+        return;
+      }
 
-  const ingredientes = await api.listarIngredientes(id);
-  const ul = document.getElementById('listaIng');
-  ul.innerHTML = '';
+      const r = await api.obterReceita(receitaId);
+      if (!r || !r.length) {
+        alert('Receita não encontrada.');
+        window.location.href = 'index.html';
+        return;
+      }
 
-  if (!ingredientes.length) {
-    ul.innerHTML = '<li class="muted">Nenhum ingrediente cadastrado.</li>';
-  } else {
-    ingredientes.forEach(i => {
-      const li = document.createElement('li');
-      li.className = "ing-row";
-      li.innerHTML = `
-        <input class="ing-nome" value="${i.nome}" readonly />
-        <input class="ing-qtde" value="${i.qtde || ''}" />
-        <button type="button" class="btn btn-danger btn-small btn-rem">Excluir</button>
-      `;
-      li.querySelector('button').addEventListener('click', async () => {
-        if (confirm('Excluir ingrediente?')) {
-          await api.deletarIngrediente(i.id);
-          await carregar();
-        }
-      });
-      ul.appendChild(li);
-    });
-  }
-}
+      const receita = r[0];
+      document.getElementById('nomeReceita').textContent = receita.nome;
+      document.getElementById('categoria').textContent = receita.categoria || '—';
+      document.getElementById('tempo_preparo').textContent = receita.tempo_preparo ? receita.tempo_preparo + ' min' : '—';
+      document.getElementById('rendimento').textContent = receita.rendimento || '—';
+      document.getElementById('modo_preparo').textContent = receita.modo_preparo;
 
-document.getElementById('formEditReceita').addEventListener('submit', async (e) => {
-  e.preventDefault();
-  const form = e.target;
-  const data = {
-    nome: form.nome.value.trim(),
-    categoria: form.categoria.value.trim() || null,
-    modo_preparo: form.modo_preparo.value.trim(),
-    tempo_preparo: form.tempo_preparo.value ? parseInt(form.tempo_preparo.value,10) : null,
-    rendimento: form.rendimento.value.trim() || null
-  };
-
-  // Ingredientes
-  const linhas = Array.from(document.querySelectorAll('#listaIng li'));
-  const ingredientes = linhas.map(l => ({
-    nome: l.querySelector('.ing-nome').value.trim(),
-    qtde: l.querySelector('.ing-qtde').value.trim() || null
-  })).filter(x => x.nome);
-
-  try {
-    await api.atualizarReceitaCompleta(id, data, ingredientes);
-    alert('Receita atualizada com sucesso!');
-    await carregar();
-  } catch(err) {
-    console.error(err);
-    alert('Falha ao atualizar a receita.');
-  }
-});
-
-carregar();
-</script>
--->
+      const listaIng = document.getElementById('listaIngredientes');
+      listaIng.innerHTML = '';
+      (receita.ingrediente || []).forEach(i => {
+        const li = document
